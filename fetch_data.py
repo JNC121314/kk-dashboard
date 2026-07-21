@@ -15,6 +15,7 @@ from datetime import datetime
 BASE = "https://kapi.likeduoduiyi.cn"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "data")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # 从环境变量读取账号信息（JSON格式），兼容本地调试
 _accounts_json = os.environ.get("ACCOUNTS_JSON")
