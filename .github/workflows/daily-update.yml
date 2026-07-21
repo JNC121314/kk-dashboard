@@ -26,9 +26,12 @@ jobs:
       - name: 提取最新数据
         env:
           ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
+          TZ: Asia/Shanghai
         run: python fetch_data.py
 
       - name: 生成HTML报告
+        env:
+          TZ: Asia/Shanghai
         run: python generate_report.py
 
       - name: 准备部署文件

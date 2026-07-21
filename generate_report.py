@@ -19,6 +19,7 @@ OUTPUT_DIR = SCRIPT_DIR
 
 CONVERSION_DAYS = 10
 TODAY = datetime.now()
+REPORT_TIME = datetime.now().strftime("%Y-%m-%d %H:%M")
 CUTOFF_DATE = (TODAY - timedelta(days=CONVERSION_DAYS)).strftime("%Y-%m-%d")
 
 ALERT_CONV_RATE = 70
@@ -903,6 +904,8 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
 .container { max-width:1400px; margin:0 auto; }
 h1 { text-align:center; color:#1a1a2e; margin:20px 0 10px; font-size:26px; }
 .subtitle { text-align:center; color:#666; margin-bottom:16px; font-size:13px; }
+.update-badge { display:inline-block; background:#e8f5e9; color:#2e7d32; padding:5px 16px; border-radius:16px; font-size:12px; font-weight:600; border:1px solid #c8e6c9; }
+.update-banner { text-align:center; margin-bottom:14px; }
 .top-bar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; position:sticky; top:0; z-index:100; background:#f0f2f5; padding:6px 0; }
 .month-filter { display:flex; gap:4px; }
 .date-filter { display:flex; }
@@ -1017,6 +1020,7 @@ th.sortable.sort-desc::after { content:' \\2193'; opacity:1; font-weight:bold; }
 body.dark { background:#0f0f1e; color:#e0e0e0; }
 body.dark h1 { color:#e0e0e0; }
 body.dark .subtitle { color:#999; }
+body.dark .update-badge { background:#1a3d1a; color:#6abe6a; border-color:#2a5a2a; }
 body.dark .top-bar { background:rgba(15,15,30,0.95); }
 body.dark .month-btn { background:#1e1e3a; color:#ccc; border-color:#333; }
 body.dark .month-btn:hover { border-color:#4472C4; color:#6e8aff; }
@@ -1122,6 +1126,7 @@ body.dark .ov-delta.ov-new { background:#1a2d3d; color:#5dade2; }
   body { padding:10px; }
   h1 { font-size:20px; margin:10px 0 6px; }
   .subtitle { font-size:11px; margin-bottom:8px; }
+  .update-badge { font-size:10px; padding:3px 12px; }
   .top-bar { padding:4px 0; gap:4px; }
   .month-btn { padding:3px 10px; font-size:10px; }
   .filter-btn { padding:4px 10px; font-size:11px; }
@@ -1613,6 +1618,8 @@ try {
 <div class="container">
 <h1>开开华彩数据看板</h1>
 <p class="subtitle">数据范围：{months[-1]} ~ {months[0]} ｜ 转化周期{CONVERSION_DAYS}天 ｜ 共 {len(current_md['accounts'])} 个看板</p>
+
+<div class="update-banner"><span class="update-badge">🕐 最后更新：{REPORT_TIME}</span></div>
 
 <div class="top-bar">
   <div class="month-filter">{month_buttons}</div>
