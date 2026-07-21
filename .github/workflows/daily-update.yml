@@ -52,3 +52,21 @@ jobs:
           publish_dir: publish
           publish_branch: gh-pages
           force_orphan: true
+
+      - name: 微信推送通知
+        if: always()
+        env:
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          UPDATE_TIME=$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M')
+          if [ "$JOB_STATUS" = "success" ]; then
+            TITLE="📊 开开华彩数据看板已更新"
+            CONTENT="数据看板已于 ${UPDATE_TIME} 更新完成。<br><br>查看链接：<a href='https://kk-dashboard-85x.pages.dev/'>https://kk-dashboard-85x.pages.dev/</a>"
+          else
+            TITLE="⚠️ 开开华彩数据看板更新失败"
+            CONTENT="数据看板更新于 ${UPDATE_TIME} 失败，请检查。<br><br>GitHub Actions：<a href='https://github.com/JNC121314/kk-dashboard/actions'>查看运行日志</a>"
+          fi
+          curl -s -X POST "https://www.pushplus.plus/send" \
+            -H "Content-Type: application/json" \
+            -d "{\"token\":\"${PUSHPLUS_TOKEN}\",\"title\":\"${TITLE}\",\"content\":\"${CONTENT}\",\"template\":\"html\"}"
