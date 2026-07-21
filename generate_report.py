@@ -524,13 +524,13 @@ def generate_panel_section(month_key, acc, conversion, alerts, daily, totals, is
   <div style="margin:14px 0;padding:14px;background:linear-gradient(135deg,#f5f7fa,#e8edf5);border-radius:10px;border:2px solid {color}">
     <div style="font-size:14px;font-weight:700;color:{color};margin-bottom:10px">📊 R值分析 <span style="font-size:11px;font-weight:normal;color:#888">（{r_formula}）</span></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap">
-      <div class="r-card" style="background:#fff;border-radius:8px;padding:12px 20px;text-align:center;flex:1;min-width:140px;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer;transition:box-shadow 0.2s" onmouseenter="showRDetail('mature','{section_id}',event)" onmouseleave="hideRDetail()" onmouseover="this.style.boxShadow='0 4px 14px rgba(0,0,0,0.18)'" onmouseout="this.style.boxShadow='0 2px 6px rgba(0,0,0,0.06)'">
-        <div style="font-size:12px;color:#888">已转化R值 <span style="font-size:9px;opacity:0.5">👆悬停查看</span></div>
+      <div class="r-card" style="background:#fff;border-radius:8px;padding:12px 20px;text-align:center;flex:1;min-width:140px;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer;transition:box-shadow 0.2s" onclick="toggleRDetail('mature','{section_id}',event)" onmouseover="this.style.boxShadow='0 4px 14px rgba(0,0,0,0.18)'" onmouseout="this.style.boxShadow='0 2px 6px rgba(0,0,0,0.06)'">
+        <div style="font-size:12px;color:#888">已转化R值 <span style="font-size:9px;opacity:0.5">👆点击查看</span></div>
         <div style="font-size:22px;font-weight:700;color:#155724" data-cat-kpi="r-mature-val">¥{r_mature}</div>
         <div style="font-size:10px;color:#aaa" data-cat-kpi="r-mature-formula">¥{total_mature_order:,.0f} ÷ {r_mature_denom:,} {r_denom_label}</div>
       </div>
-      <div class="r-card" style="background:#fff;border-radius:8px;padding:12px 20px;text-align:center;flex:1;min-width:140px;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer;transition:box-shadow 0.2s" onmouseenter="showRDetail('converting','{section_id}',event)" onmouseleave="hideRDetail()" onmouseover="this.style.boxShadow='0 4px 14px rgba(0,0,0,0.18)'" onmouseout="this.style.boxShadow='0 2px 6px rgba(0,0,0,0.06)'">
-        <div style="font-size:12px;color:#888">转化中R值 <span style="font-size:9px;opacity:0.5">👆悬停查看</span></div>
+      <div class="r-card" style="background:#fff;border-radius:8px;padding:12px 20px;text-align:center;flex:1;min-width:140px;box-shadow:0 2px 6px rgba(0,0,0,0.06);cursor:pointer;transition:box-shadow 0.2s" onclick="toggleRDetail('converting','{section_id}',event)" onmouseover="this.style.boxShadow='0 4px 14px rgba(0,0,0,0.18)'" onmouseout="this.style.boxShadow='0 2px 6px rgba(0,0,0,0.06)'">
+        <div style="font-size:12px;color:#888">转化中R值 <span style="font-size:9px;opacity:0.5">👆点击查看</span></div>
         <div style="font-size:22px;font-weight:700;color:#856404" data-cat-kpi="r-converting-val">¥{r_converting}</div>
         <div style="font-size:10px;color:#aaa" data-cat-kpi="r-converting-formula">¥{total_converting_order:,.0f} ÷ {r_converting_denom:,} {r_denom_label}</div>
       </div>
@@ -545,7 +545,7 @@ def generate_panel_section(month_key, acc, conversion, alerts, daily, totals, is
     📌 转化周期{CONVERSION_DAYS}天，截止日{CUTOFF_DATE[5:]}。{CUTOFF_DATE[5:]}及之前的 leads 已进入成熟期（已转化），之后为转化中。已过滤 leads=0 的标签。
     {"加微率低于" + str(ALERT_CONV_RATE) + "%的达人标记为加微率异常。" if check_conv else ""}
     已转化超过{ALERT_MATURE_LEADS}个 leads 但无成交金额的达人标记为转化异常。
-    R值低于¥{R_VALUE_TARGET}且已转化数据量≥{R_VALUE_MIN_MATURE}的达人标记为R值偏低。💡 悬停R值卡片可查看各达人R值明细。
+    R值低于¥{R_VALUE_TARGET}且已转化数据量≥{R_VALUE_MIN_MATURE}的达人标记为R值偏低。💡 点击R值卡片可查看各达人R值明细，再次点击可关闭。
   </div>
 
   <div class="chart-container" style="height:300px">
@@ -1294,16 +1294,29 @@ function applyCategoryFilter() {{
 
 function openModal(title, bodyHtml) {{ document.getElementById('rTooltip').style.display = 'none'; document.getElementById('modalTitle').textContent = title; document.getElementById('modalBody').innerHTML = bodyHtml + '<div style="text-align:center;margin-top:16px"><button class="modal-close-btn" onclick="closeModal()">✕ 关闭</button></div>'; document.getElementById('modal').classList.add('show'); }}
 function closeModal() {{ document.getElementById('modal').classList.remove('show'); document.getElementById('rTooltip').style.display = 'none'; }}
-document.addEventListener('keydown', function(e) {{ if (e.key === 'Escape') closeModal(); }});
+document.addEventListener('keydown', function(e) {{ if (e.key === 'Escape') {{ closeModal(); hideRDetail(); }} }});
+document.addEventListener('click', function(e) {{
+  const tip = document.getElementById('rTooltip');
+  if (tip.style.display === 'block' && !tip.contains(e.target) && !e.target.closest('.r-card')) {{
+    tip.style.display = 'none';
+  }}
+}});
 function fmt(n) {{ return (n||0).toLocaleString(); }}
 
 const R_TARGET = {R_VALUE_TARGET};
-function showRDetail(type, section, event) {{
+function toggleRDetail(type, section, event) {{
+  const tip = document.getElementById('rTooltip');
+  const currentType = tip.dataset.rType;
+  const currentSection = tip.dataset.rSection;
+  if (tip.style.display === 'block' && currentType === type && currentSection === section) {{
+    tip.style.display = 'none';
+    return;
+  }}
   const data = ALL_DATA[section]?.r_details?.[type];
   if (!data || data.length === 0) return;
   const title = type === 'mature' ? '已转化R值明细' : '转化中R值明细';
   const dLabel = section === 'hc' ? 'leads' : '加微';
-  let h = '<div style="font-weight:700;margin-bottom:8px;font-size:13px;color:#333">' + title + '（目标¥' + R_TARGET + '）</div>';
+  let h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:700;font-size:13px;color:#333">' + title + '（目标¥' + R_TARGET + '）</span><span style="cursor:pointer;font-size:18px;opacity:0.6;padding:0 6px;line-height:1" onclick="hideRDetail()" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">✕</span></div>';
   h += '<table><thead><tr><th style="text-align:left">达人标签</th><th>R值</th><th>GMV</th><th>' + dLabel + '</th><th>状态</th></tr></thead><tbody>';
   data.forEach(d => {{
     const isLow = d.r < R_TARGET;
@@ -1312,9 +1325,11 @@ function showRDetail(type, section, event) {{
     h += '<tr><td style="text-align:left;font-weight:600">' + d.label + '</td><td style="color:' + c + ';font-weight:700">¥' + d.r + '</td><td>¥' + d.gmv.toFixed(0) + '</td><td>' + d.denom + '</td><td style="color:' + c + '">' + st + '</td></tr>';
   }});
   h += '</tbody></table>';
-  const tip = document.getElementById('rTooltip');
+  h += '<div style="text-align:center;margin-top:10px"><button class="modal-close-btn" style="font-size:12px;padding:6px 18px" onclick="hideRDetail()">收起</button></div>';
   tip.innerHTML = h;
   tip.style.display = 'block';
+  tip.dataset.rType = type;
+  tip.dataset.rSection = section;
   const rect = event.currentTarget.getBoundingClientRect();
   let left = rect.left;
   let top = rect.bottom + 8;
@@ -1678,75 +1693,119 @@ try {
 # ========== Main ==========
 
 def generate_push_summary(months, all_months_data):
-    """生成微信推送简报内容，写入 push_content.txt"""
+    """生成微信推送简报内容，与投放量级速览1:1同UI，写入 push_content.txt"""
     current_month = months[0]
     md = all_months_data[current_month]
     accounts = md["accounts"]
 
-    # 找最新有数据的日期
-    all_dates = set()
-    for acc in accounts:
-        for r in acc["records"]:
-            dt = r.get("date", "")
-            if dt and dt != "总计":
-                all_dates.add(dt)
-    latest_date = max(all_dates) if all_dates else TODAY_STR
+    # 复用 compute_account_daily_totals 获取和速览完全一致的数据
+    account_daily = compute_account_daily_totals(accounts)
 
-    # 各看板当日数据 + 按 dataLabel 聚合
-    panels = []
-    total_leads = 0
-    total_addwx = 0
-    sku_stats = {}
+    huacai_stats = account_daily.get(HUACAI_LABEL, {"prev": {}, "cur": {}})
+    other_accounts = [(label, stats) for label, stats in account_daily.items()
+                      if label != HUACAI_LABEL]
+    other_accounts.sort(key=lambda x: max(x[1]["prev"]["addwx"], x[1]["cur"]["addwx"]), reverse=True)
 
-    for acc in accounts:
-        label = acc["label"]
-        acc_leads = 0
-        acc_addwx = 0
-        for r in acc["records"]:
-            if r.get("date") == latest_date:
-                leads = r.get("leadsCount", 0)
-                addwx = r.get("addWx", 0)
-                acc_leads += leads
-                acc_addwx += addwx
-                dl = r.get("dataLabel", "") or "未分类"
-                if dl not in sku_stats:
-                    sku_stats[dl] = {"leads": 0, "addwx": 0, "panel": label}
-                sku_stats[dl]["leads"] += leads
-                sku_stats[dl]["addwx"] += addwx
-        panels.append({"label": label, "leads": acc_leads, "addwx": acc_addwx})
-        total_leads += acc_leads
-        total_addwx += acc_addwx
+    dow_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    cur_str = huacai_stats.get("cur_str", TODAY_STR)
+    prev_str = huacai_stats.get("prev_str", (TODAY - timedelta(days=1)).strftime("%Y-%m-%d"))
 
-    # 量级 TOP1（按 leads）
-    top_sku = None
-    if sku_stats:
-        top_label = max(sku_stats, key=lambda k: sku_stats[k]["leads"])
-        top = sku_stats[top_label]
-        if top["leads"] > 0:
-            top_sku = {"label": top_label, "panel": top["panel"],
-                       "leads": top["leads"], "addwx": top["addwx"]}
+    def day_label(d_str):
+        d = datetime.strptime(d_str, "%Y-%m-%d")
+        return d_str[5:] + "(" + dow_names[d.weekday()] + ")"
 
-    panels.sort(key=lambda x: x["leads"], reverse=True)
+    prev_display = day_label(prev_str)
+    cur_display = day_label(cur_str)
+
+    def delta_str(cur_val, prev_val):
+        if prev_val == 0 and cur_val == 0:
+            return ""
+        if prev_val == 0:
+            return '<span style="background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:4px;font-size:11px">NEW</span>'
+        pct = round((cur_val - prev_val) / prev_val * 100)
+        if pct > 0:
+            return f'<span style="color:#c0392b;font-weight:600;font-size:11px">+{pct}%</span>'
+        elif pct < 0:
+            return f'<span style="color:#27ae60;font-weight:600;font-size:11px">{pct}%</span>'
+        else:
+            return '<span style="color:#888;font-size:11px">0%</span>'
 
     update_time = TODAY.strftime("%Y-%m-%d %H:%M")
-    content = f"📅 数据日期：{latest_date[5:]}<br>🕐 更新时间：{update_time}<br><br>"
 
-    if top_sku:
-        content += "🏆 量级TOP1<br>"
-        content += f"课包/主播：{top_sku['label']}<br>"
-        content += f"来源看板：{top_sku['panel']}<br>"
-        content += f"leads：{top_sku['leads']} | 加微：{top_sku['addwx']}<br><br>"
+    # 行样式
+    row_style = 'display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid #eee'
+    cell_label = 'flex:1;font-size:13px;font-weight:500;color:#333'
+    cell_val = 'min-width:50px;text-align:center;font-size:13px;font-weight:600;color:#333'
+    cell_delta = 'min-width:50px;text-align:center;font-size:12px'
 
-    content += "📈 各看板概览<br>"
-    for p in panels:
-        if p["leads"] > 0 or p["addwx"] > 0:
-            content += f"{p['label']}：leads {p['leads']} | 加微 {p['addwx']}<br>"
-    content += f"<br>合计：leads {total_leads} | 加微 {total_addwx}<br><br>"
-    content += "🔗 <a href=https://kk-dashboard-85x.pages.dev/>查看完整看板</a>"
+    hc_prev_leads = huacai_stats["prev"]["leads"]
+    hc_cur_leads = huacai_stats["cur"]["leads"]
+    hc_prev_addwx = huacai_stats["prev"]["addwx"]
+    hc_cur_addwx = huacai_stats["cur"]["addwx"]
+    hc_delta = delta_str(hc_cur_leads, hc_prev_leads)
+
+    # 构建 HTML
+    html = f'''<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:420px;margin:0 auto">
+<div style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;padding:16px 20px;margin-bottom:12px">
+  <div style="font-size:16px;font-weight:700;color:#fff">📊 投放量级速览</div>
+  <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:4px">{prev_display} → {cur_display} ｜ 更新 {update_time}</div>
+</div>
+
+<div style="background:#f8f9ff;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px solid #e0e7ff">
+  <div style="font-size:13px;font-weight:700;color:#4a4a8a;margin-bottom:8px">🎬 华彩课包 · leads</div>
+  <div style="{row_style};border-bottom:none">
+    <span style="{cell_label}">华彩课包面板</span>
+    <span style="{cell_val}">{hc_prev_leads:,}</span>
+    <span style="{cell_delta}">{hc_delta}</span>
+    <span style="{cell_val}">{hc_cur_leads:,}</span>
+  </div>
+  <div style="font-size:11px;color:#888;padding:4px 12px">加微 {hc_prev_addwx:,} → {hc_cur_addwx:,}</div>
+</div>
+
+<div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #e8e8e8">
+  <div style="font-size:13px;font-weight:700;color:#333;margin-bottom:8px">🎹 其他看板 · 加微</div>
+  <div style="{row_style};background:#f5f5f5;border-radius:6px;font-weight:600;font-size:12px;color:#666">
+    <span style="{cell_label}">看板</span>
+    <span style="{cell_val}">{prev_display}</span>
+    <span style="{cell_delta}">变化</span>
+    <span style="{cell_val}">{cur_display}</span>
+  </div>'''
+
+    other_prev_total = 0
+    other_cur_total = 0
+    for label, stats in other_accounts:
+        pv = stats["prev"]["addwx"]
+        cv = stats["cur"]["addwx"]
+        other_prev_total += pv
+        other_cur_total += cv
+        delta = delta_str(cv, pv)
+        opacity = '1' if (pv > 0 or cv > 0) else '0.4'
+        html += f'''
+  <div style="{row_style};opacity:{opacity}">
+    <span style="{cell_label}">{label}</span>
+    <span style="{cell_val}">{pv:,}</span>
+    <span style="{cell_delta}">{delta}</span>
+    <span style="{cell_val}">{cv:,}</span>
+  </div>'''
+
+    other_delta = delta_str(other_cur_total, other_prev_total)
+    html += f'''
+  <div style="{row_style};border-top:2px solid #ddd;border-bottom:none;font-weight:700;background:#fafafa">
+    <span style="{cell_label}">合计</span>
+    <span style="{cell_val}">{other_prev_total:,}</span>
+    <span style="{cell_delta}">{other_delta}</span>
+    <span style="{cell_val}">{other_cur_total:,}</span>
+  </div>
+</div>
+
+<div style="text-align:center;margin-top:12px">
+  <a href="https://kk-dashboard-85x.pages.dev/" style="display:inline-block;background:#4472C4;color:#fff;text-decoration:none;padding:8px 24px;border-radius:20px;font-size:13px;font-weight:600">🔗 查看完整看板</a>
+</div>
+</div>'''
 
     push_path = os.path.join(OUTPUT_DIR, "push_content.txt")
     with open(push_path, "w", encoding="utf-8") as f:
-        f.write(content)
+        f.write(html)
     print(f"推送简报已保存: {push_path}")
 
 
