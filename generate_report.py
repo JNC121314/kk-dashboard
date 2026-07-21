@@ -1659,6 +1659,79 @@ try {
 
 # ========== Main ==========
 
+def generate_push_summary(months, all_months_data):
+    """生成微信推送简报内容，写入 push_content.txt"""
+    current_month = months[0]
+    md = all_months_data[current_month]
+    accounts = md["accounts"]
+
+    # 找最新有数据的日期
+    all_dates = set()
+    for acc in accounts:
+        for r in acc["records"]:
+            dt = r.get("date", "")
+            if dt and dt != "总计":
+                all_dates.add(dt)
+    latest_date = max(all_dates) if all_dates else TODAY_STR
+
+    # 各看板当日数据 + 按 dataLabel 聚合
+    panels = []
+    total_leads = 0
+    total_addwx = 0
+    sku_stats = {}
+
+    for acc in accounts:
+        label = acc["label"]
+        acc_leads = 0
+        acc_addwx = 0
+        for r in acc["records"]:
+            if r.get("date") == latest_date:
+                leads = r.get("leadsCount", 0)
+                addwx = r.get("addWx", 0)
+                acc_leads += leads
+                acc_addwx += addwx
+                dl = r.get("dataLabel", "") or "未分类"
+                if dl not in sku_stats:
+                    sku_stats[dl] = {"leads": 0, "addwx": 0, "panel": label}
+                sku_stats[dl]["leads"] += leads
+                sku_stats[dl]["addwx"] += addwx
+        panels.append({"label": label, "leads": acc_leads, "addwx": acc_addwx})
+        total_leads += acc_leads
+        total_addwx += acc_addwx
+
+    # 量级 TOP1（按 leads）
+    top_sku = None
+    if sku_stats:
+        top_label = max(sku_stats, key=lambda k: sku_stats[k]["leads"])
+        top = sku_stats[top_label]
+        if top["leads"] > 0:
+            top_sku = {"label": top_label, "panel": top["panel"],
+                       "leads": top["leads"], "addwx": top["addwx"]}
+
+    panels.sort(key=lambda x: x["leads"], reverse=True)
+
+    update_time = TODAY.strftime("%Y-%m-%d %H:%M")
+    content = f"📅 数据日期：{latest_date[5:]}<br>🕐 更新时间：{update_time}<br><br>"
+
+    if top_sku:
+        content += "🏆 量级TOP1<br>"
+        content += f"课包/主播：{top_sku['label']}<br>"
+        content += f"来源看板：{top_sku['panel']}<br>"
+        content += f"leads：{top_sku['leads']} | 加微：{top_sku['addwx']}<br><br>"
+
+    content += "📈 各看板概览<br>"
+    for p in panels:
+        if p["leads"] > 0 or p["addwx"] > 0:
+            content += f"{p['label']}：leads {p['leads']} | 加微 {p['addwx']}<br>"
+    content += f"<br>合计：leads {total_leads} | 加微 {total_addwx}<br><br>"
+    content += "🔗 <a href=https://kk-dashboard-85x.pages.dev/>查看完整看板</a>"
+
+    push_path = os.path.join(OUTPUT_DIR, "push_content.txt")
+    with open(push_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"推送简报已保存: {push_path}")
+
+
 def main():
     months = get_available_months()
     if not months:
@@ -1685,6 +1758,9 @@ def main():
         f.write(html)
 
     print(f"\n报告已保存: {html_path}")
+
+    # 生成微信推送简报
+    generate_push_summary(months, all_months_data)
 
 
 if __name__ == "__main__":
