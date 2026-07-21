@@ -967,10 +967,12 @@ tr.expanded .expand-icon { transform:rotate(90deg); }
 .modal-overlay.show { display:flex; }
 .modal-box { background:#fff; border-radius:12px; max-width:900px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.2); overflow:hidden; }
 .modal-header { background:linear-gradient(135deg,#4472C4,#764ba2); color:#fff; padding:16px 24px; font-size:16px; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
-.modal-close { cursor:pointer; font-size:22px; opacity:0.8; }
-.modal-close:hover { opacity:1; }
+.modal-close { cursor:pointer; font-size:22px; opacity:0.8; padding:4px 10px; border-radius:6px; user-select:none; }
+.modal-close:hover { opacity:1; background:rgba(255,255,255,0.15); }
 .modal-body { padding:20px 24px; max-height:70vh; overflow-y:auto; }
 .modal-body table { font-size:12px; }
+.modal-close-btn { padding:8px 24px; border-radius:8px; border:2px solid #4472C4; background:#4472C4; color:#fff; cursor:pointer; font-size:14px; font-weight:600; }
+.modal-close-btn:hover { background:#3a5bb8; border-color:#3a5bb8; }
 .hc-hero { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:16px; }
 .hc-hero-item { background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border-radius:10px; padding:14px; text-align:center; }
 .hc-hero-item .v { font-size:22px; font-weight:700; margin-top:2px; }
@@ -1051,6 +1053,7 @@ body.dark .detail-tab.active { background:#4472C4; color:#fff; }
 body.dark .detail-table { border-color:#2a2a4a; }
 body.dark .modal-box { background:#1a1a2e; }
 body.dark .modal-body { background:#1a1a2e; }
+body.dark .modal-close-btn { background:#4472C4; border-color:#4472C4; color:#fff; }
 body.dark .note { background:#2d2818; color:#aaa; border-left-color:#ffc107; }
 body.dark .alert-box.ok { background:#1a3d1a; color:#6abe6a; }
 body.dark .alert-box:not(.ok) { border-color:#555; }
@@ -1289,8 +1292,9 @@ function applyCategoryFilter() {{
   refreshChartsForCatFn();
 }}
 
-function openModal(title, bodyHtml) {{ document.getElementById('modalTitle').textContent = title; document.getElementById('modalBody').innerHTML = bodyHtml; document.getElementById('modal').classList.add('show'); }}
-function closeModal() {{ document.getElementById('modal').classList.remove('show'); }}
+function openModal(title, bodyHtml) {{ document.getElementById('rTooltip').style.display = 'none'; document.getElementById('modalTitle').textContent = title; document.getElementById('modalBody').innerHTML = bodyHtml + '<div style="text-align:center;margin-top:16px"><button class="modal-close-btn" onclick="closeModal()">✕ 关闭</button></div>'; document.getElementById('modal').classList.add('show'); }}
+function closeModal() {{ document.getElementById('modal').classList.remove('show'); document.getElementById('rTooltip').style.display = 'none'; }}
+document.addEventListener('keydown', function(e) {{ if (e.key === 'Escape') closeModal(); }});
 function fmt(n) {{ return (n||0).toLocaleString(); }}
 
 const R_TARGET = {R_VALUE_TARGET};
@@ -1505,7 +1509,14 @@ function renderFreeDetail(pk) {{
   h += '<div class="detail-pane" data-pane="sku"><div class="detail-table" style="max-height:400px"><table><thead><tr><th>排名</th><th>达人</th><th>leads</th><th>加微</th><th>UV</th><th>成交</th><th>操作</th></tr></thead><tbody>';
   od.sku.forEach((s,i)=>{{ h+='<tr class="clickable" onclick="showSkuDetail(\\''+s.label+'\\',\\''+pk+'\\')"><td>'+(i+1)+'</td><td style="text-align:left;font-weight:600;color:#4472C4">'+s.label+'</td><td style="color:#e74c3c;font-weight:600">'+fmt(s.leads)+'</td><td style="color:#2ecc71">'+fmt(s.addwx)+'</td><td>'+fmt(s.uv)+'</td><td style="color:#e67e22">¥'+s.order.toFixed(2)+'</td><td><span style="color:#4472C4;font-size:11px">日量→</span></td></tr>'; }});
   h += '</tbody></table></div></div>';
+  h += '<div style="text-align:center;margin-top:10px"><button class="modal-close-btn" style="font-size:12px;padding:6px 18px" onclick="collapseFreeDetail(\\''+pk+'\\')">收起</button></div>';
   return h;
+}}
+function collapseFreeDetail(pk) {{
+  const dr = document.getElementById('free-detail-'+CURRENT_MONTH+'-'+pk);
+  const row = document.querySelector('tr.clickable[onclick*="'+pk+'"]');
+  if (dr) dr.style.display = 'none';
+  if (row) row.classList.remove('expanded');
 }}
 function switchTab(tabEl, pn) {{ const c=tabEl.parentElement.parentElement; c.querySelectorAll('.detail-tab').forEach(t=>t.classList.remove('active')); tabEl.classList.add('active'); c.querySelectorAll('.detail-pane').forEach(p=>p.classList.remove('active')); c.querySelector('[data-pane="'+pn+'"]').classList.add('active'); }}
 
@@ -1645,7 +1656,7 @@ try {
 
 <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
-    <div class="modal-header"><span id="modalTitle"></span><span class="modal-close" onclick="closeModal()">✕</span></div>
+    <div class="modal-header"><span id="modalTitle"></span><span class="modal-close" onclick="event.stopPropagation();closeModal()">✕</span></div>
     <div class="modal-body" id="modalBody"></div>
   </div>
 </div>
