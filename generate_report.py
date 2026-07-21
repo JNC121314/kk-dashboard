@@ -306,69 +306,58 @@ TODAY_STR = TODAY.strftime("%Y-%m-%d")
 
 
 def compute_account_daily_totals(accounts, reference_date_str=None):
-    """Compute per-account daily totals for reference date and previous 2 days."""
+    """Compute per-account daily totals for reference date and previous day."""
     if reference_date_str is None:
         reference_date_str = TODAY_STR
     ref = datetime.strptime(reference_date_str, "%Y-%m-%d")
-    d2_str = (ref - timedelta(days=2)).strftime("%Y-%m-%d")
-    d1_str = (ref - timedelta(days=1)).strftime("%Y-%m-%d")
-    d0_str = reference_date_str
+    prev_str = (ref - timedelta(days=1)).strftime("%Y-%m-%d")
+    cur_str = reference_date_str
 
     result = {}
     for acc in accounts:
         label = acc["label"]
-        d2_stats = {"leads": 0, "addwx": 0, "uv": 0, "order": 0}
-        d1_stats = {"leads": 0, "addwx": 0, "uv": 0, "order": 0}
-        d0_stats = {"leads": 0, "addwx": 0, "uv": 0, "order": 0}
+        prev_stats = {"leads": 0, "addwx": 0, "uv": 0, "order": 0}
+        cur_stats = {"leads": 0, "addwx": 0, "uv": 0, "order": 0}
         for r in acc["records"]:
             dt = r.get("date", "")
-            if dt == d2_str:
-                d2_stats["leads"] += r.get("leadsCount", 0)
-                d2_stats["addwx"] += r.get("addWx", 0)
-                d2_stats["uv"] += r.get("pageUv", 0)
-                d2_stats["order"] += r.get("orderPrice", 0)
-            elif dt == d1_str:
-                d1_stats["leads"] += r.get("leadsCount", 0)
-                d1_stats["addwx"] += r.get("addWx", 0)
-                d1_stats["uv"] += r.get("pageUv", 0)
-                d1_stats["order"] += r.get("orderPrice", 0)
-            elif dt == d0_str:
-                d0_stats["leads"] += r.get("leadsCount", 0)
-                d0_stats["addwx"] += r.get("addWx", 0)
-                d0_stats["uv"] += r.get("pageUv", 0)
-                d0_stats["order"] += r.get("orderPrice", 0)
-        result[label] = {"d2": d2_stats, "d1": d1_stats, "d0": d0_stats,
-                         "d2_str": d2_str, "d1_str": d1_str, "d0_str": d0_str}
+            if dt == prev_str:
+                prev_stats["leads"] += r.get("leadsCount", 0)
+                prev_stats["addwx"] += r.get("addWx", 0)
+                prev_stats["uv"] += r.get("pageUv", 0)
+                prev_stats["order"] += r.get("orderPrice", 0)
+            elif dt == cur_str:
+                cur_stats["leads"] += r.get("leadsCount", 0)
+                cur_stats["addwx"] += r.get("addWx", 0)
+                cur_stats["uv"] += r.get("pageUv", 0)
+                cur_stats["order"] += r.get("orderPrice", 0)
+        result[label] = {"prev": prev_stats, "cur": cur_stats,
+                         "prev_str": prev_str, "cur_str": cur_str}
     return result
 
-
-
 def generate_overview_html(accounts, account_daily):
-    """Generate a compact 'Last 3 days' overview — two rows only:
-    1. 华彩课包 leads (前日→昨日→今日)
-    2. 其他看板 加微 (前日→昨日→今日, per-dashboard)
+    """Generate a compact 'Last 2 days' overview — two rows only:
+    1. 华彩课包 leads (昨日→今日)
+    2. 其他看板 加微 (昨日→今日, per-dashboard)
     """
 
     # Separate huacai vs others
-    huacai_stats = account_daily.get(HUACAI_LABEL, {"d2": {}, "d1": {}, "d0": {}})
+    huacai_stats = account_daily.get(HUACAI_LABEL, {"prev": {}, "cur": {}})
     other_accounts = [(label, stats) for label, stats in account_daily.items()
                       if label != HUACAI_LABEL]
-    other_accounts.sort(key=lambda x: max(x[1]["d2"]["addwx"], x[1]["d1"]["addwx"], x[1]["d0"]["addwx"]), reverse=True)
+    other_accounts.sort(key=lambda x: max(x[1]["prev"]["addwx"], x[1]["cur"]["addwx"]), reverse=True)
 
     # Day labels
     dow_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
-    d0_str = huacai_stats.get("d0_str", TODAY_STR)
-    d1_str = huacai_stats.get("d1_str", (TODAY - timedelta(days=1)).strftime("%Y-%m-%d"))
-    d2_str = huacai_stats.get("d2_str", (TODAY - timedelta(days=2)).strftime("%Y-%m-%d"))
+    cur_str = huacai_stats.get("cur_str", TODAY_STR)
+    prev_str = huacai_stats.get("prev_str", (TODAY - timedelta(days=1)).strftime("%Y-%m-%d"))
 
     def day_label(d_str):
         d = datetime.strptime(d_str, "%Y-%m-%d")
         return d_str[5:] + "(" + dow_names[d.weekday()] + ")"
 
-    d2_display = day_label(d2_str)
-    d1_display = day_label(d1_str)
-    d0_display = day_label(d0_str)
+    prev_display = day_label(prev_str)
+    cur_display = day_label(cur_str)
 
     def delta_html(current_val, previous_val):
         if previous_val == 0 and current_val == 0:
@@ -384,85 +373,69 @@ def generate_overview_html(accounts, account_daily):
             return '<span class="ov-delta ov-flat">0%</span>'
 
     # Huacai leads row
-    hc_d2_leads = huacai_stats["d2"]["leads"]
-    hc_d1_leads = huacai_stats["d1"]["leads"]
-    hc_d0_leads = huacai_stats["d0"]["leads"]
-    hc_d2_addwx = huacai_stats["d2"]["addwx"]
-    hc_d1_addwx = huacai_stats["d1"]["addwx"]
-    hc_d0_addwx = huacai_stats["d0"]["addwx"]
-    hc_delta_d1 = delta_html(hc_d1_leads, hc_d2_leads)
-    hc_delta_d0 = delta_html(hc_d0_leads, hc_d1_leads)
+    hc_prev_leads = huacai_stats["prev"]["leads"]
+    hc_cur_leads = huacai_stats["cur"]["leads"]
+    hc_prev_addwx = huacai_stats["prev"]["addwx"]
+    hc_cur_addwx = huacai_stats["cur"]["addwx"]
+    hc_delta = delta_html(hc_cur_leads, hc_prev_leads)
 
     # Other accounts rows
     other_rows_html = ""
     for label, stats in other_accounts:
-        d2_val = stats["d2"]["addwx"]
-        d1_val = stats["d1"]["addwx"]
-        d0_val = stats["d0"]["addwx"]
-        delta_d1 = delta_html(d1_val, d2_val)
-        delta_d0 = delta_html(d0_val, d1_val)
-        row_class = "ov-row-active" if (d2_val > 0 or d1_val > 0 or d0_val > 0) else "ov-row-zero"
+        prev_val = stats["prev"]["addwx"]
+        cur_val = stats["cur"]["addwx"]
+        delta = delta_html(cur_val, prev_val)
+        row_class = "ov-row-active" if (prev_val > 0 or cur_val > 0) else "ov-row-zero"
         other_rows_html += f'''
         <div class="ov-table-row {row_class}">
           <span class="ov-cell-label">{label}</span>
-          <span class="ov-cell-day">{d2_val:,}</span>
-          <span class="ov-cell-day">{d1_val:,}</span>
-          <span class="ov-cell-delta">{delta_d1}</span>
-          <span class="ov-cell-day">{d0_val:,}</span>
-          <span class="ov-cell-delta">{delta_d0}</span>
+          <span class="ov-cell-day">{prev_val:,}</span>
+          <span class="ov-cell-delta">{delta}</span>
+          <span class="ov-cell-day">{cur_val:,}</span>
         </div>'''
 
     # Other totals
-    other_d2_total = sum(s["d2"]["addwx"] for _, s in other_accounts)
-    other_d1_total = sum(s["d1"]["addwx"] for _, s in other_accounts)
-    other_d0_total = sum(s["d0"]["addwx"] for _, s in other_accounts)
-    other_delta_d1 = delta_html(other_d1_total, other_d2_total)
-    other_delta_d0 = delta_html(other_d0_total, other_d1_total)
+    other_prev_total = sum(s["prev"]["addwx"] for _, s in other_accounts)
+    other_cur_total = sum(s["cur"]["addwx"] for _, s in other_accounts)
+    other_delta = delta_html(other_cur_total, other_prev_total)
 
     html = f'''
 <div class="ov-section" id="overviewSection">
   <div class="ov-header">
     <span class="ov-title">📊 投放量级速览</span>
-    <span class="ov-date-info">{d2_display} → {d1_display} → {d0_display}</span>
+    <span class="ov-date-info">{prev_display} → {cur_display}</span>
   </div>
 
   <div class="ov-block">
     <div class="ov-block-title">🎬 华彩课包 · leads</div>
     <div class="ov-table-row ov-row-huacai">
       <span class="ov-cell-label">华彩课包面板</span>
-      <span class="ov-cell-day">{hc_d2_leads:,}</span>
-      <span class="ov-cell-day">{hc_d1_leads:,}</span>
-      <span class="ov-cell-delta">{hc_delta_d1}</span>
-      <span class="ov-cell-day">{hc_d0_leads:,}</span>
-      <span class="ov-cell-delta">{hc_delta_d0}</span>
+      <span class="ov-cell-day">{hc_prev_leads:,}</span>
+      <span class="ov-cell-delta">{hc_delta}</span>
+      <span class="ov-cell-day">{hc_cur_leads:,}</span>
     </div>
-    <div class="ov-block-sub">加微 {hc_d2_addwx:,}→{hc_d1_addwx:,}→{hc_d0_addwx:,}</div>
+    <div class="ov-block-sub">加微 {hc_prev_addwx:,}→{hc_cur_addwx:,}</div>
   </div>
 
   <div class="ov-block">
     <div class="ov-block-title">🎹 其他看板 · 加微</div>
     <div class="ov-table-header">
       <span class="ov-cell-label">看板</span>
-      <span class="ov-cell-day">{d2_display}</span>
-      <span class="ov-cell-day">{d1_display}</span>
+      <span class="ov-cell-day">{prev_display}</span>
       <span class="ov-cell-delta">变化</span>
-      <span class="ov-cell-day">{d0_display}</span>
-      <span class="ov-cell-delta">变化</span>
+      <span class="ov-cell-day">{cur_display}</span>
     </div>
     {other_rows_html}
     <div class="ov-table-row ov-row-total">
       <span class="ov-cell-label">合计</span>
-      <span class="ov-cell-day">{other_d2_total:,}</span>
-      <span class="ov-cell-day">{other_d1_total:,}</span>
-      <span class="ov-cell-delta">{other_delta_d1}</span>
-      <span class="ov-cell-day">{other_d0_total:,}</span>
-      <span class="ov-cell-delta">{other_delta_d0}</span>
+      <span class="ov-cell-day">{other_prev_total:,}</span>
+      <span class="ov-cell-delta">{other_delta}</span>
+      <span class="ov-cell-day">{other_cur_total:,}</span>
     </div>
   </div>
 </div>'''
 
     return html
-
 
 def generate_alert_html(alerts, panel_name, section_id):
     if not alerts:
@@ -1120,8 +1093,8 @@ body.dark [style*="background:#f5f7fa"] { background-color:#0f0f1e !important; }
 .ov-row-zero { color:#bbb; }
 .ov-row-total { background:#e8f4e8; font-weight:700; border-top:2px solid #2ecc71; margin-top:4px; padding:8px 8px; }
 .ov-cell-label { flex:1; font-weight:600; min-width:120px; }
-.ov-cell-day { flex:0 0 60px; text-align:right; color:#155724; font-weight:700; }
-.ov-cell-delta { flex:0 0 60px; text-align:right; }
+.ov-cell-day { flex:0 0 70px; text-align:right; color:#155724; font-weight:700; }
+.ov-cell-delta { flex:0 0 70px; text-align:right; }
 .ov-delta { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
 .ov-delta.ov-up { background:#d4edda; color:#155724; }
 .ov-delta.ov-down { background:#fee; color:#c0392b; }
@@ -1166,8 +1139,8 @@ body.dark .ov-delta.ov-new { background:#1a2d3d; color:#5dade2; }
   .ov-date-info { font-size:11px; }
   .ov-table-row { font-size:12px; padding:4px 6px; }
   .ov-cell-label { min-width:80px; font-size:12px; }
-  .ov-cell-day { flex:0 0 45px; font-size:12px; }
-  .ov-cell-delta { flex:0 0 40px; }
+  .ov-cell-day { flex:0 0 55px; font-size:12px; }
+  .ov-cell-delta { flex:0 0 50px; }
   .ov-delta { font-size:9px; padding:1px 4px; }
   table { font-size:11px; }
   th { padding:6px 4px; }
@@ -1405,40 +1378,38 @@ function updateOverview(dateStr) {{
   const accountDaily = ALL_MONTHS[CURRENT_MONTH]?.account_daily?.[dateStr];
   if (!accountDaily) return;
   const huacaiLabel = '华彩课包面板';
-  const huacai = accountDaily[huacaiLabel] || {{d2:{{leads:0,addwx:0}},d1:{{leads:0,addwx:0}},d0:{{leads:0,addwx:0}}}};
+  const huacai = accountDaily[huacaiLabel] || {{prev:{{leads:0,addwx:0}},cur:{{leads:0,addwx:0}}}};
   let others = Object.entries(accountDaily).filter(([k]) => k !== huacaiLabel);
-  others.sort((a,b) => Math.max(b[1].d2.addwx,b[1].d1.addwx,b[1].d0.addwx) - Math.max(a[1].d2.addwx,a[1].d1.addwx,a[1].d0.addwx));
+  others.sort((a,b) => Math.max(b[1].prev.addwx,b[1].cur.addwx) - Math.max(a[1].prev.addwx,a[1].cur.addwx));
 
-  const d2Str = huacai.d2_str || new Date(new Date(dateStr + 'T00:00:00').getTime() - 2*86400000).toISOString().slice(0,10);
-  const d1Str = huacai.d1_str || new Date(new Date(dateStr + 'T00:00:00').getTime() - 86400000).toISOString().slice(0,10);
-  const d0Str = huacai.d0_str || dateStr;
+  const prevStr = huacai.prev_str || new Date(new Date(dateStr + 'T00:00:00').getTime() - 86400000).toISOString().slice(0,10);
+  const curStr = huacai.cur_str || dateStr;
 
-  const d2Display = dayLabel(d2Str);
-  const d1Display = dayLabel(d1Str);
-  const d0Display = dayLabel(d0Str);
+  const prevDisplay = dayLabel(prevStr);
+  const curDisplay = dayLabel(curStr);
 
-  const hcDeltaD1 = deltaHtml(huacai.d1.leads, huacai.d2.leads);
-  const hcDeltaD0 = deltaHtml(huacai.d0.leads, huacai.d1.leads);
+  const hcDelta = deltaHtml(huacai.cur.leads, huacai.prev.leads);
 
   let otherRows = '';
   others.forEach(([label, stats]) => {{
-    const d2v = stats.d2.addwx, d1v = stats.d1.addwx, d0v = stats.d0.addwx;
-    const active = (d2v > 0 || d1v > 0 || d0v > 0) ? 'ov-row-active' : 'ov-row-zero';
-    otherRows += '<div class="ov-table-row ' + active + '"><span class="ov-cell-label">' + label + '</span><span class="ov-cell-day">' + fmt(d2v) + '</span><span class="ov-cell-day">' + fmt(d1v) + '</span><span class="ov-cell-delta">' + deltaHtml(d1v, d2v) + '</span><span class="ov-cell-day">' + fmt(d0v) + '</span><span class="ov-cell-delta">' + deltaHtml(d0v, d1v) + '</span></div>';
+    const pv = stats.prev.addwx, cv = stats.cur.addwx;
+    const active = (pv > 0 || cv > 0) ? 'ov-row-active' : 'ov-row-zero';
+    otherRows += '<div class="ov-table-row ' + active + '"><span class="ov-cell-label">' + label + '</span><span class="ov-cell-day">' + fmt(pv) + '</span><span class="ov-cell-delta">' + deltaHtml(cv, pv) + '</span><span class="ov-cell-day">' + fmt(cv) + '</span></div>';
   }});
 
-  const otherD2Total = others.reduce((s,[,x]) => s + x.d2.addwx, 0);
-  const otherD1Total = others.reduce((s,[,x]) => s + x.d1.addwx, 0);
-  const otherD0Total = others.reduce((s,[,x]) => s + x.d0.addwx, 0);
+  const otherPrevTotal = others.reduce((s,[,x]) => s + x.prev.addwx, 0);
+  const otherCurTotal = others.reduce((s,[,x]) => s + x.cur.addwx, 0);
 
-  const html = '<div class="ov-section" id="overviewSection"><div class="ov-header"><span class="ov-title">📊 投放量级速览</span><span class="ov-date-info">' + d2Display + ' → ' + d1Display + ' → ' + d0Display + '</span></div>' +
-    '<div class="ov-block"><div class="ov-block-title">🎬 华彩课包 · leads</div><div class="ov-table-row ov-row-huacai"><span class="ov-cell-label">华彩课包面板</span><span class="ov-cell-day">' + fmt(huacai.d2.leads) + '</span><span class="ov-cell-day">' + fmt(huacai.d1.leads) + '</span><span class="ov-cell-delta">' + hcDeltaD1 + '</span><span class="ov-cell-day">' + fmt(huacai.d0.leads) + '</span><span class="ov-cell-delta">' + hcDeltaD0 + '</span></div>' +
-    '<div class="ov-block-sub">加微 ' + fmt(huacai.d2.addwx) + '→' + fmt(huacai.d1.addwx) + '→' + fmt(huacai.d0.addwx) + '</div></div>' +
-    '<div class="ov-block"><div class="ov-block-title">🎹 其他看板 · 加微</div><div class="ov-table-header"><span class="ov-cell-label">看板</span><span class="ov-cell-day">' + d2Display + '</span><span class="ov-cell-day">' + d1Display + '</span><span class="ov-cell-delta">变化</span><span class="ov-cell-day">' + d0Display + '</span><span class="ov-cell-delta">变化</span></div>' + otherRows +
-    '<div class="ov-table-row ov-row-total"><span class="ov-cell-label">合计</span><span class="ov-cell-day">' + fmt(otherD2Total) + '</span><span class="ov-cell-day">' + fmt(otherD1Total) + '</span><span class="ov-cell-delta">' + deltaHtml(otherD1Total, otherD2Total) + '</span><span class="ov-cell-day">' + fmt(otherD0Total) + '</span><span class="ov-cell-delta">' + deltaHtml(otherD0Total, otherD1Total) + '</span></div></div></div>';
+  const html = '<div class="ov-section" id="overviewSection"><div class="ov-header"><span class="ov-title">📊 投放量级速览</span><span class="ov-date-info">' + prevDisplay + ' → ' + curDisplay + '</span></div>' +
+    '<div class="ov-block"><div class="ov-block-title">🎬 华彩课包 · leads</div><div class="ov-table-row ov-row-huacai"><span class="ov-cell-label">华彩课包面板</span><span class="ov-cell-day">' + fmt(huacai.prev.leads) + '</span><span class="ov-cell-delta">' + hcDelta + '</span><span class="ov-cell-day">' + fmt(huacai.cur.leads) + '</span></div>' +
+    '<div class="ov-block-sub">加微 ' + fmt(huacai.prev.addwx) + '→' + fmt(huacai.cur.addwx) + '</div></div>' +
+    '<div class="ov-block"><div class="ov-block-title">🎹 其他看板 · 加微</div><div class="ov-table-header"><span class="ov-cell-label">看板</span><span class="ov-cell-day">' + prevDisplay + '</span><span class="ov-cell-delta">变化</span><span class="ov-cell-day">' + curDisplay + '</span></div>' + otherRows +
+    '<div class="ov-table-row ov-row-total"><span class="ov-cell-label">合计</span><span class="ov-cell-day">' + fmt(otherPrevTotal) + '</span><span class="ov-cell-delta">' + deltaHtml(otherCurTotal, otherPrevTotal) + '</span><span class="ov-cell-day">' + fmt(otherCurTotal) + '</span></div></div></div>';
 
   section.outerHTML = html;
 }}
+
+
 
 function filterData(type, btn) {{
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
