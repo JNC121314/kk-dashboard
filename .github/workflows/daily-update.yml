@@ -64,7 +64,7 @@ jobs:
         run: |
           python -c "
           import json, os, urllib.request
-          token = os.environ['PUSHPLUS_TOKEN']
+          tokens = os.environ['PUSHPLUS_TOKEN'].split(',')
           status = os.environ['JOB_STATUS']
           if status == 'success':
               with open('push_content.txt', 'r', encoding='utf-8') as f:
@@ -73,8 +73,12 @@ jobs:
           else:
               content = '数据看板更新失败，请检查。<br><br>GitHub Actions：<a href=https://github.com/JNC121314/kk-dashboard/actions>查看运行日志</a>'
               title = '⚠️ 开开华彩数据看板更新失败'
-          data = json.dumps({'token': token, 'title': title, 'content': content, 'template': 'html'}).encode('utf-8')
-          req = urllib.request.Request('https://www.pushplus.plus/send', data=data, headers={'Content-Type': 'application/json'})
-          resp = urllib.request.urlopen(req)
-          print(resp.read().decode('utf-8'))
+          for token in tokens:
+              token = token.strip()
+              if not token:
+                  continue
+              data = json.dumps({'token': token, 'title': title, 'content': content, 'template': 'html'}).encode('utf-8')
+              req = urllib.request.Request('https://www.pushplus.plus/send', data=data, headers={'Content-Type': 'application/json'})
+              resp = urllib.request.urlopen(req)
+              print(resp.read().decode('utf-8'))
           "
