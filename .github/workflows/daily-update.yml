@@ -61,18 +61,21 @@ jobs:
         env:
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
           JOB_STATUS: ${{ job.status }}
+          TZ: Asia/Shanghai
         run: |
           python -c "
           import json, os, urllib.request
+          from datetime import datetime
           tokens = os.environ['PUSHPLUS_TOKEN'].split(',')
           status = os.environ['JOB_STATUS']
+          now_str = datetime.now().strftime('%m-%d %H:%M')
           if status == 'success':
               with open('push_content.txt', 'r', encoding='utf-8') as f:
                   content = f.read()
-              title = '📊 开开华彩数据看板已更新'
+              title = f'简知分销日报·{now_str}'
           else:
               content = '数据看板更新失败，请检查。<br><br>GitHub Actions：<a href=https://github.com/JNC121314/kk-dashboard/actions>查看运行日志</a>'
-              title = '⚠️ 开开华彩数据看板更新失败'
+              title = f'⚠️ 简知分销日报更新失败·{now_str}'
           for token in tokens:
               token = token.strip()
               if not token:
