@@ -17,27 +17,14 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "data")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# 从环境变量读取账号信息（JSON格式），兼容本地调试
+# 从环境变量读取账号信息（JSON格式），必须通过 Secrets 注入
 _accounts_json = os.environ.get("ACCOUNTS_JSON")
 if _accounts_json:
     ACCOUNTS = json.loads(_accounts_json)
 else:
-    # 本地调试用（仅开发环境，生产环境通过GitHub Secrets注入）
-    ACCOUNTS = [
-        {"label": "华彩课包面板", "username": "LZXQA", "password": "KKHC1234"},
-        {"label": "通用声乐面板", "username": "ZHSYY", "password": "kkhc1234"},
-        {"label": "通用钢琴面板", "username": "ZHGQOY", "password": "kkhc1234"},
-        {"label": "茉茉", "username": "mmlGQ", "password": "KKHC1234"},
-        {"label": "郑老师/张老师", "username": "ZHzlsg", "password": "KKHC1234"},
-        {"label": "黄老师", "username": "Hlsgq", "password": "KKHC1234"},
-        {"label": "严老师钢琴", "username": "LUYAN", "password": "KKHC123L"},
-        {"label": "莉莉辛辛", "username": "Xllgq", "password": "KKHC1234"},
-        {"label": "娜娜", "username": "NANA", "password": "KKHC2345"},
-        {"label": "毛毛矩阵开开慧弹琴", "username": "htqgq", "password": "KKHC1234"},
-        {"label": "源源老师看板", "username": "yylsgq", "password": "KKHC1234"},
-        {"label": "常老师西西", "username": "ZHcsns", "password": "KKHC1234"},
-        {"label": "千千老师", "username": "xzmbgq", "password": "KKHC1234"},
-    ]
+    print("错误：未设置 ACCOUNTS_JSON 环境变量")
+    print("请在 GitHub Secrets 中配置 ACCOUNTS_JSON")
+    exit(1)
 
 
 def get_month_range(year, month):
