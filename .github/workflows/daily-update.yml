@@ -43,3 +43,23 @@ jobs:
           publish_dir: publish
           publish_branch: gh-pages
           force_orphan: true
+
+      - name: 同步到 Gitee Pages
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          cd publish
+          git init
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "auto update $(date -u '+%Y-%m-%d %H:%M')"
+          git push "https://JNc1213:${GITEE_TOKEN}@gitee.com/JNc1213/kk-dashboard.git" HEAD:gh-pages --force
+
+      - name: 触发 Gitee Pages 更新
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          curl -s -X POST -H "Content-Type: application/json" \
+            -H "Authorization: token ${GITEE_TOKEN}" \
+            "https://gitee.com/api/v5/repos/JNc1213/kk-dashboard/pages/builds" || true
