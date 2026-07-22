@@ -1,10 +1,7 @@
 name: 每日更新数据看板
 
 on:
-  schedule:
-    # 北京时间 0/9/11/15/19/22 点自动更新（UTC -8h）
-    - cron: '0 1,3,7,11,14,16 * * *'
-  workflow_dispatch: # 支持手动触发
+  workflow_dispatch: # 由 Cloudflare Worker Cron 精准触发
 
 permissions:
   contents: write
