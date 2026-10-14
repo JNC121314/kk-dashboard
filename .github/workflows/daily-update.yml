@@ -36,14 +36,21 @@ jobs:
           mkdir -p publish
           cp 开开华彩数据看板.html publish/index.html
 
-      - name: 部署到 Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+      - name: 设置 Node.js（wrangler 部署用）
+        uses: actions/setup-node@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: kk-dashboard
-          directory: publish
-          branch: main
+          node-version: '22'
+
+      - name: 部署到 Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler pages deploy publish \
+            --project-name=kk-dashboard \
+            --branch=main \
+            --commit-dirty=true \
+            --commit-message="Auto deploy: ${{ github.run_id }}"
 
       - name: 同步到 GitHub Pages（备用）
         uses: peaceiris/actions-gh-pages@v4
